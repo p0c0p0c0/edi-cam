@@ -10,10 +10,20 @@
     }
 
     #canvas-video {
+      position: relative;
+
       width: 640px;
       height: 480px;
       border: 1px solid #ccc;
-      transform: scale(-1, 1);
+    }
+
+    #canvas-over {
+      position: absolute;
+      margin-left: -640px;
+
+      width: 640px;
+      height: 480px;
+      border: 1px solid #ccc;
     }
   </style>
 </head>
@@ -26,20 +36,45 @@
       change this internal resolution to whatever the source provides. The size the
       canvas is displayed on the website is dictated by the CSS style.
     -->
-    <canvas id="canvas-video" width="640" height="480"></canvas>
+    <canvas id="canvas-video" width="320" height="240"></canvas>
+    <canvas id="canvas-over" width="320" height="240"></canvas>
+
   </div>
 
+  <script src="/build/tracking-min.js"></script>
+  <script src="/build/data/face-min.js"></script>
+  <script src="/build/data/eye-min.js"></script>
+  <script src="/build/data/mouth-min.js"></script>
   <script src="/jsmpg.js"></script>
   <script type="text/javascript">
-    // Show loading notice
-    var canvas = document.getElementById('canvas-video');
-    var ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#333';
-    ctx.fillText('...', canvas.width/2-30, canvas.height/3);
+    window.onload = function() {
+      // Show loading notice
+      var canvas = document.getElementById('canvas-video');
+      var over = document.getElementById('canvas-over');
+      var over_ctx = over.getContext('2d');
+      var ctx = canvas.getContext('2d');
+      ctx.fillStyle = 'black';
+      ctx.fillText('Loading...', canvas.width/2-30, canvas.height/3);
 
-    // Start the player
-    var client = new WebSocket('ws://' + document.domain + ':8084');
-    var player = new jsmpeg(client, { canvas:canvas });
+      // Start the player
+      var client = new WebSocket('ws://' + document.domain + ':8084');
+      var player = new jsmpeg(client, { canvas:canvas });
+
+      setTimeout(function(){
+        var tracker = new tracking.ObjectTracker(['face']);
+
+        tracker.on('track', function(event) {
+          event.data.forEach(function(rect) {
+            over_ctx.clearRect(0,0,canvas.width,canvas.height);
+            over_ctx.strokeStyle = 'red';
+            over_ctx.strokeRect(rect.x,rect.y,rect.width,rect.height);
+          })
+        })
+        setInterval(function() {
+          tracking.track('#canvas-video', tracker);
+        }, 100)
+      }, 500)
+    }
   </script>
 </body>
 </html>
