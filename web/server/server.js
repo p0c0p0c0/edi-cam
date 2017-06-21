@@ -61,6 +61,15 @@ wsServer.broadcast = function(data, opts) {
   }
 };
 
+// Run webcam process
+function runCamProcess()
+{
+  var camProcess = childProcess.spawn('../../bin/do_ffmpeg');
+  camProcess.on('exit', function() {
+    runCamProcess();
+  });
+}
+
 // HTTP server to accept incoming MPEG1 stream
 http.createServer(function (req, res) {
   console.log(
@@ -74,8 +83,8 @@ http.createServer(function (req, res) {
 }).listen(configServer.streamPort, function () {
   console.log('Listening for video stream on port ' + configServer.streamPort);
 
-  // Run do_ffmpeg.sh from node                                                   
-  childProcess.exec('../../bin/do_ffmpeg.sh');
+  // Run do_ffmpeg.sh from node
+  runCamProcess()
 });
 
 module.exports.app = app;
